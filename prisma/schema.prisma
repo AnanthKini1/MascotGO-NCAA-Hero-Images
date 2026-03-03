@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+model School {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  images    Image[]
+  createdAt DateTime @default(now())
+}
+
+model Image {
+  id              String   @id @default(cuid())
+  schoolId        String
+  school          School   @relation(fields: [schoolId], references: [id])
+  
+  // Metadata Discovery
+  sourceUrl       String   @unique // Prevents duplicate search results
+  thumbnailUrl    String
+  width           Int
+  height          Int
+  
+  // Processing Data
+  blobUrl         String?  // Nullable until it's actually uploaded to Azure
+  azureScore      Float?
+  
+  status          Status   @default(PENDING)
+  votes           Vote[]
+  createdAt       DateTime @default(now())
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  imageId   String
+  image     Image    @relation(fields: [imageId], references: [id])
+  userEmail String
+  type      VoteType
+  
+  @@unique([userEmail, imageId]) // One vote per SIR per image
+}
+
+enum Status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum VoteType {
+  APPROVE
+  REJECT
+}
